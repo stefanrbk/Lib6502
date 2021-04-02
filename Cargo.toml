@@ -1,2 +1,2 @@
 [workspace]
-members = ["lib6502", "tester"]
+members = ["lib6502", "tester", "lib6520"]

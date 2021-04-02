@@ -1,0 +1,10 @@
+[package]
+authors = ["Stefan Kewatt <stefan.kewatt@gmail.com>"]
+edition = "2018"
+name = "lib6520"
+version = "0.0.1-alpha"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
