@@ -21,12 +21,12 @@ pub struct Cpu {
     addr_bus: u16,
     state: TState,
     rw: bool,
-    pub phase_1_high: Action,
-    pub phase_2_high: Action,
-    pub phase_1_low: Action,
-    pub phase_2_low: Action,
-    pub read_write_high: Action,
-    pub read_write_low: Action,
+    pub phase_1_high: Vec<Action>,
+    pub phase_2_high: Vec<Action>,
+    pub phase_1_low: Vec<Action>,
+    pub phase_2_low: Vec<Action>,
+    pub read_write_high: Vec<Action>,
+    pub read_write_low: Vec<Action>,
 }
 
 impl Cpu {
