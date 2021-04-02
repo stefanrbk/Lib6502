@@ -9,6 +9,17 @@ enum TState {
     T6,
     Kil,
 }
+enum NmiState {
+    Clear,
+    Set,
+    SetRecognized,
+    Complete,
+}
+enum ResetState {
+    Clear,
+    Set,
+    Complete,
+}
 
 pub struct Cpu {
     pc: u16,
@@ -21,12 +32,20 @@ pub struct Cpu {
     addr_bus: u16,
     state: TState,
     rw: bool,
+    irq: bool,
+    rdy: bool,
+    nmi: NmiState,
+    rst: ResetState,
     pub phase_1_raising_edge: Vec<Action>,
     pub phase_2_raising_edge: Vec<Action>,
     pub phase_1_falling_edge: Vec<Action>,
     pub phase_2_falling_edge: Vec<Action>,
     pub read_write_raising_edge: Vec<Action>,
     pub read_write_falling_edge: Vec<Action>,
+    pub nmi_raising_edge: Vec<Action>,
+    pub nmi_falling_edge: Vec<Action>,
+    pub sync_raising_edge: Vec<Action>,
+    pub sync_falling_edge: Vec<Action>,
 }
 
 impl Cpu {
