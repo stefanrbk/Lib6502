@@ -5,3 +5,4 @@ name = "lib6502tester"
 version = "0.0.1-alpha"
 
 [dependencies]
+lib6502 = {path = "../lib6502"}
