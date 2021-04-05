@@ -4,13 +4,42 @@ pub mod cpu;
 pub mod memory;
 
 pub type Action = fn();
-pub type Bus<T> = RwLock<T>;
+pub type Bus<T> = Arc<RwLock<T>>;
 pub type Barrier = Arc<std::sync::Barrier>;
+
+const MAXMEM: usize = 1024 * 64;
 
 #[macro_export]
 macro_rules! no_barrier {
     () => {
-        std::sync::Arc::new(std::sync::Barrier::new(1))
+        new_barrier!(1)
+    };
+}
+#[macro_export]
+macro_rules! new_bus {
+    ($value:expr) => {
+        std::sync::Arc::new(std::sync::RwLock::new($value))
+    };
+}
+#[macro_export]
+macro_rules! new_barrier {
+    ($value:expr) => {
+        std::sync::Arc::new(std::sync::Barrier::new($value))
+    };
+}
+#[macro_export]
+macro_rules! bus_write {
+    ($bus:expr, $value:expr) => {
+        (*$bus.write().unwrap()) = $value
+    };
+    ($bus:expr, $index:expr, $value:expr) => {
+        (*$bus.write().unwrap())[$index] = $value
+    };
+}
+#[macro_export]
+macro_rules! bus_read {
+    ($bus:expr) => {
+        (*$bus.read().unwrap())
     };
 }
 
@@ -38,6 +67,10 @@ enum ResetState {
     Complete,
 }
 
+pub struct Memory {
+    data: [u8; MAXMEM],
+}
+
 pub struct CpuIO {
     pub data_bus: Bus<u8>,
     pub addr_bus: Bus<u16>,
@@ -56,6 +89,8 @@ pub struct CpuIO {
     pub nmi_negative_edge: Barrier,
     pub sync_positive_edge: Barrier,
     pub sync_negative_edge: Barrier,
+    pub addr_stable: Barrier,
+    pub data_stable: Barrier,
 }
 
 pub struct Cpu {
