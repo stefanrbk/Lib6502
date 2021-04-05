@@ -6,12 +6,12 @@ use std::thread;
 
 fn main() {
     let mem = new_bus!(Memory::new());
-    bus_write!(mem, 0x0001, 0x69);
+    write_bus!(mem, 0x0001, 0x69);
 
     let mem_arc1 = mem.clone();
 
-    let kill_signal = new_bus!(false);
-    let rw_signal = new_bus!(false);
+    let kill_signal = new_pin!(false);
+    let rw_signal = new_pin!(false);
 
     let addr_bus = new_bus!(0 as u16);
     let data_bus = new_bus!(0 as u8);
@@ -35,23 +35,23 @@ fn main() {
             // wait until the start of a cpu cycle
             mem_start.wait();
 
-            if *mem_rw_signal.read().unwrap() {
+            if read_bus!(mem_rw_signal) {
                 // if cpu signals a memory read
                 mem_addr_stable.wait(); // wait until cpu has pushed an address
-                let addr = bus_read!(mem_addr_bus);
+                let addr = read_bus!(mem_addr_bus);
                 // push the data at that addr into data bus
-                bus_write!(mem_data_bus, bus_read!(mem_arc1)[addr]);
+                write_bus!(mem_data_bus, read_bus!(mem_arc1)[addr]);
                 mem_data_stable.wait(); // signal the cpu that the requested data is available
             } else {
                 // if cpu signals a memory write
                 mem_addr_stable.wait(); // wait until cpu has pushed an address
-                let addr = bus_read!(mem_addr_bus);
+                let addr = read_bus!(mem_addr_bus);
                 mem_data_stable.wait(); // wait until cpu has pushed the data
-                let data = bus_read!(mem_data_bus);
-                bus_write!(mem_arc1, addr, data);
+                let data = read_bus!(mem_data_bus);
+                write_bus!(mem_arc1, addr, data);
             }
         }
-        println!("Memory[0000] = {:x}", bus_read!(mem_arc1)[0x0000]);
+        println!("Memory[0000] = {:x}", read_bus!(mem_arc1)[0x0000]);
     });
 
     let mut io = CpuIO::new();

@@ -5,12 +5,13 @@ pub mod memory;
 
 pub type Action = fn();
 pub type Bus<T> = Arc<RwLock<T>>;
+pub type DataPin = Bus<bool>;
 pub type Barrier = Arc<std::sync::Barrier>;
 
 const MAXMEM: usize = 1024 * 64;
 
 #[macro_export]
-macro_rules! no_barrier {
+macro_rules! null_barrier {
     () => {
         new_barrier!(1)
     };
@@ -22,13 +23,19 @@ macro_rules! new_bus {
     };
 }
 #[macro_export]
+macro_rules! new_pin {
+    ($value:expr) => {
+        new_bus!($value)
+    };
+}
+#[macro_export]
 macro_rules! new_barrier {
     ($value:expr) => {
         std::sync::Arc::new(std::sync::Barrier::new($value))
     };
 }
 #[macro_export]
-macro_rules! bus_write {
+macro_rules! write_bus {
     ($bus:expr, $value:expr) => {
         (*$bus.write().unwrap()) = $value
     };
@@ -37,9 +44,27 @@ macro_rules! bus_write {
     };
 }
 #[macro_export]
-macro_rules! bus_read {
+macro_rules! read_bus {
     ($bus:expr) => {
         (*$bus.read().unwrap())
+    };
+}
+#[macro_export]
+macro_rules! read_pin {
+    ($pin:expr) => {
+        read_bus!($pin)
+    };
+}
+#[macro_export]
+macro_rules! set_pin {
+    ($pin:expr) => {
+        (*$pin.write().unwrap()) = true
+    };
+}
+#[macro_export]
+macro_rules! clear_pin {
+    ($pin:expr) => {
+        (*$pin.write().unwrap()) = false
     };
 }
 
@@ -74,11 +99,11 @@ pub struct Memory {
 pub struct CpuIO {
     pub data_bus: Bus<u8>,
     pub addr_bus: Bus<u16>,
-    pub rw: Bus<bool>,
-    pub irq: Bus<bool>,
-    pub rdy: Bus<bool>,
-    pub nmi: Bus<bool>,
-    pub rst: Bus<bool>,
+    pub rw: DataPin,
+    pub irq: DataPin,
+    pub rdy: DataPin,
+    pub nmi: DataPin,
+    pub rst: DataPin,
     pub phase_1_positive_edge: Barrier,
     pub phase_2_positive_edge: Barrier,
     pub phase_1_negative_edge: Barrier,
