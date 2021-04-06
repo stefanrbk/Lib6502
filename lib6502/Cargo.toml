@@ -8,3 +8,4 @@ version = "0.0.1-alpha"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+futures = "0.3"

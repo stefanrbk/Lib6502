@@ -1,11 +1,12 @@
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Condvar, Mutex, RwLock};
 
-pub mod cpu;
-pub mod memory;
+mod clock;
+mod cpu;
+mod memory;
 
 pub type Action = fn();
 pub type Bus<T> = Arc<RwLock<T>>;
-pub type DataPin = Bus<bool>;
+pub type DataPin = Bus<Pin>;
 pub type Barrier = Arc<std::sync::Barrier>;
 
 const MAXMEM: usize = 1024 * 64;
@@ -13,7 +14,7 @@ const MAXMEM: usize = 1024 * 64;
 #[macro_export]
 macro_rules! null_barrier {
     () => {
-        new_barrier!(1)
+        new_barrier!(1);
     };
 }
 #[macro_export]
@@ -24,8 +25,8 @@ macro_rules! new_bus {
 }
 #[macro_export]
 macro_rules! new_pin {
-    ($value:expr) => {
-        new_bus!($value)
+    ($value:ident) => {
+        new_bus!(Pin::$value)
     };
 }
 #[macro_export]
@@ -58,13 +59,13 @@ macro_rules! read_pin {
 #[macro_export]
 macro_rules! set_pin {
     ($pin:expr) => {
-        (*$pin.write().unwrap()) = true
+        (*$pin.write().unwrap()) = Pin::Set
     };
 }
 #[macro_export]
 macro_rules! clear_pin {
     ($pin:expr) => {
-        (*$pin.write().unwrap()) = false
+        (*$pin.write().unwrap()) = Pin::Clear
     };
 }
 
@@ -81,15 +82,24 @@ enum TState {
 
 enum NmiState {
     Clear,
-    Set,
+    Set1,
+    Set2,
     SetRecognized,
-    Complete,
 }
 
-enum ResetState {
+pub enum Pin {
     Clear,
     Set,
-    Complete,
+}
+
+pub struct Clock {
+    pub phase_1_positive_edge: Barrier,
+    pub phase_1_negative_edge: Barrier,
+    pub phase_2_positive_edge: Barrier,
+    pub phase_2_negative_edge: Barrier,
+    pub p1: DataPin,
+    pub p2: DataPin,
+    pub kill: Bus<bool>,
 }
 
 pub struct Memory {
@@ -101,17 +111,17 @@ pub struct CpuIO {
     pub addr_bus: Bus<u16>,
     pub rw: DataPin,
     pub irq: DataPin,
+    pub irq_count: Bus<u8>,
     pub rdy: DataPin,
     pub nmi: DataPin,
     pub rst: DataPin,
+    pub sync: DataPin,
     pub phase_1_positive_edge: Barrier,
     pub phase_2_positive_edge: Barrier,
     pub phase_1_negative_edge: Barrier,
     pub phase_2_negative_edge: Barrier,
     pub read_write_positive_edge: Barrier,
     pub read_write_negative_edge: Barrier,
-    pub nmi_positive_edge: Barrier,
-    pub nmi_negative_edge: Barrier,
     pub sync_positive_edge: Barrier,
     pub sync_negative_edge: Barrier,
     pub addr_stable: Barrier,
@@ -125,8 +135,8 @@ pub struct Cpu {
     x: u8,
     y: u8,
     p: u8,
-    nmi_state: NmiState,
+    nmi_state: Bus<NmiState>,
     t_state: TState,
-    rst_state: ResetState,
+    rst_state: DataPin,
     io: CpuIO,
 }
