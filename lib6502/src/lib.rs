@@ -1,4 +1,4 @@
-use std::sync::{Arc, Condvar, Mutex, RwLock};
+use std::sync::{Arc, RwLock};
 
 mod clock;
 mod cpu;
