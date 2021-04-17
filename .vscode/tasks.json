@@ -1,0 +1,53 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "cargo",
+            "subcommand": "build",
+            "problemMatcher": [
+                "$rustc"
+            ],
+            "group": "build",
+            "label": "Cargo build"
+        },
+        {
+            "type": "cargo",
+            "subcommand": "test",
+            "problemMatcher": [
+                "$rustc"
+            ],
+            "group": "test",
+            "label": "Cargo test"
+        } //,
+        // {
+        //     "type": "cargo",
+        //     "subcommand": "build",
+        //     "problemMatcher": [
+        //         "$rustc"
+        //     ],
+        //     "group": "build",
+        //     "label": "Rust: cargo build - lib6502tester",
+        //     "dependsOn": [
+        //         "Rust: cargo build - lib6502"
+        //     ],
+        //     "options": {
+        //         "cwd": "${workspaceRoot}/tester"
+        //     }
+        // },
+        // {
+        //     "type": "cargo",
+        //     "subcommand": "test",
+        //     "problemMatcher": [
+        //         "$rustc"
+        //     ],
+        //     "group": "test",
+        //     "label": "Rust: cargo test - lib6502tester",
+        //     "dependsOn": [
+        //         "Rust: cargo build - lib6502"
+        //     ],
+        //     "options": {
+        //         "cwd": "${workspaceRoot}/tester"
+        //     }
+        // }
+    ]
+}
