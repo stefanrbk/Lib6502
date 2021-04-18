@@ -13,7 +13,7 @@ impl super::Cpu {
             io: io,
             nmi_state: new_bus!(NmiState::Clear),
             t_state: TState::Kil,
-            rst_state: new_pin!(Clear),
+            rst_state: new_bus!(NmiState::Clear),
         }
     }
 
@@ -39,6 +39,14 @@ impl super::Cpu {
         set_pin!(self.io.nmi);
     }
 
+    pub fn trigger_rst(&mut self) {
+        clear_pin!(self.io.rst);
+    }
+
+    pub fn clear_rst(&mut self) {
+        set_pin!(self.io.rst);
+    }
+
     pub fn trigger_irq(&mut self) {
         write_bus!(self.io.irq_count, read_bus!(self.io.irq_count) + 1);
         clear_pin!(self.io.irq);
@@ -53,7 +61,7 @@ impl super::Cpu {
 
     fn cycle(&mut self) {
         self.io.phase_1_positive_edge.wait();
-        self.handle_nmi();
+        self.handle_reset_nmi();
         self.phase_1();
         self.io.phase_1_negative_edge.wait();
         self.io.phase_2_positive_edge.wait();
@@ -61,17 +69,22 @@ impl super::Cpu {
         self.io.phase_2_negative_edge.wait();
     }
 
-    fn handle_nmi(&mut self) {
-        match read_pin!(self.io.nmi) {
-            Pin::Clear => match read_bus!(self.nmi_state) {
-                NmiState::Clear => write_bus!(self.nmi_state, NmiState::Set1),
-                NmiState::Set1 => write_bus!(self.nmi_state, NmiState::Set2),
-                NmiState::Set2 => write_bus!(self.nmi_state, NmiState::SetRecognized),
+    fn handle_reset_nmi(&mut self) {
+        Cpu::handle_reset_or_nmi(&self.io.rst, &mut self.rst_state);
+        Cpu::handle_reset_or_nmi(&self.io.nmi, &mut self.nmi_state);
+    }
+
+    fn handle_reset_or_nmi(pin: &DataPin, bus: &mut Bus<NmiState>) {
+        match read_pin!(pin) {
+            Pin::Clear => match read_bus!(bus) {
+                NmiState::Clear => write_bus!(bus, NmiState::Set1),
+                NmiState::Set1 => write_bus!(bus, NmiState::Set2),
+                NmiState::Set2 => write_bus!(bus, NmiState::SetRecognized),
                 NmiState::SetRecognized => {}
             },
-            Pin::Set => match read_bus!(self.nmi_state) {
+            Pin::Set => match read_bus!(bus) {
                 NmiState::Set1 | NmiState::Set2 => {
-                    write_bus!(self.nmi_state, NmiState::Clear)
+                    write_bus!(bus, NmiState::Clear)
                 }
                 _ => {}
             },
@@ -83,21 +96,24 @@ impl super::Cpu {
             TState::T0 => {
                 set_pin!(self.io.sync);
                 self.io.sync_positive_edge.wait();
+                match read_pin!(self.rst_state) {
+                    NmiState::SetRecognized => {
+                        // TODO: logic to start reset
+                    }
+                    _ => {}
+                }
                 match read_pin!(self.nmi_state) {
                     NmiState::SetRecognized => {
                         // acknowledge non-maskable interrupt
                         write_bus!(self.nmi_state, NmiState::Clear);
 
                         // TODO: logic to start non-maskable interrupt
-
-                        return;
                     }
                     _ => {}
                 }
                 match read_pin!(self.io.irq) {
                     Pin::Clear => {
                         // TODO: logic to start interrupt
-                        return;
                     }
                     _ => {}
                 }
@@ -144,3 +160,4 @@ impl super::CpuIO {
         }
     }
 }
+mod pla;

@@ -137,6 +137,6 @@ pub struct Cpu {
     p: u8,
     nmi_state: Bus<NmiState>,
     t_state: TState,
-    rst_state: DataPin,
+    rst_state: Bus<NmiState>,
     io: CpuIO,
 }
