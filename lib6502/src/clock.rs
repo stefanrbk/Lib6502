@@ -8,8 +8,8 @@ impl super::Clock {
             phase_1_negative_edge: new_barrier!(count),
             phase_2_positive_edge: new_barrier!(count),
             phase_2_negative_edge: new_barrier!(count),
-            p1: new_pin!(Clear),
-            p2: new_pin!(Clear),
+            p1: new_pin_unset!(),
+            p2: new_pin_unset!(),
             kill: new_bus!(false),
         }
     }

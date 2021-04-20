@@ -6,10 +6,21 @@ mod memory;
 
 pub type Action = fn();
 pub type Bus<T> = Arc<RwLock<T>>;
-pub type DataPin = Bus<Pin>;
+pub type DataPin = Bus<bool>;
 pub type Barrier = Arc<std::sync::Barrier>;
 
 const MAXMEM: usize = 1024 * 64;
+
+#[macro_export]
+macro_rules! cond {
+    ($val:expr, $t:expr, $f:expr) => {
+        if $val {
+            $t
+        } else {
+            $f
+        }
+    };
+}
 
 #[macro_export]
 macro_rules! null_barrier {
@@ -24,9 +35,15 @@ macro_rules! new_bus {
     };
 }
 #[macro_export]
-macro_rules! new_pin {
-    ($value:ident) => {
-        new_bus!(Pin::$value)
+macro_rules! new_pin_unset {
+    () => {
+        new_bus!(false)
+    };
+}
+#[macro_export]
+macro_rules! new_pin_set {
+    () => {
+        new_bus!(true)
     };
 }
 #[macro_export]
@@ -59,13 +76,13 @@ macro_rules! read_pin {
 #[macro_export]
 macro_rules! set_pin {
     ($pin:expr) => {
-        (*$pin.write().unwrap()) = Pin::Set
+        (*$pin.write().unwrap()) = true
     };
 }
 #[macro_export]
 macro_rules! clear_pin {
     ($pin:expr) => {
-        (*$pin.write().unwrap()) = Pin::Clear
+        (*$pin.write().unwrap()) = false
     };
 }
 
@@ -80,16 +97,19 @@ enum TState {
     Kil,
 }
 
-enum NmiState {
-    Clear,
-    Set1,
-    Set2,
-    SetRecognized,
-}
-
-pub enum Pin {
-    Clear,
-    Set,
+struct IrqRstControl {
+    nmig: bool,
+    nmil: bool,
+    nmip: bool,
+    irqp: bool,
+    intg: bool,
+    resp: bool,
+    resg: bool,
+    last_rst: bool,
+    last_nmig: bool,
+    last_nmil: bool,
+    last_irq: bool,
+    brk_done: bool,
 }
 
 pub struct Clock {
@@ -107,15 +127,16 @@ pub struct Memory {
 }
 
 pub struct CpuIO {
-    pub data_bus: Bus<u8>,
-    pub addr_bus: Bus<u16>,
+    pub db: Bus<u8>,
+    pub abh: Bus<u8>,
+    pub abl: Bus<u8>,
     pub rw: DataPin,
     pub irq: DataPin,
-    pub irq_count: Bus<u8>,
     pub rdy: DataPin,
     pub nmi: DataPin,
     pub rst: DataPin,
     pub sync: DataPin,
+    pub so: DataPin,
     pub phase_1_positive_edge: Barrier,
     pub phase_2_positive_edge: Barrier,
     pub phase_1_negative_edge: Barrier,
@@ -129,14 +150,29 @@ pub struct CpuIO {
 }
 
 pub struct Cpu {
-    pc: u16,
     s: u8,
     a: u8,
     x: u8,
     y: u8,
     p: u8,
-    nmi_state: Bus<NmiState>,
+    pd: u8,
+    ir: u8,
+    dor: u8,
+    dl: u8,
+    pcls: u8,
+    pcl: u8,
+    ai: u8,
+    bi: u8,
+    add: u8,
+    abl: u8,
+    abh: u8,
+    pchs: u8,
+    pch: u8,
+    db: u8,
+    adl: u8,
+    adh: u8,
+    sb: u8,
+    irq_rst_control: IrqRstControl,
     t_state: TState,
-    rst_state: Bus<NmiState>,
     io: CpuIO,
 }
