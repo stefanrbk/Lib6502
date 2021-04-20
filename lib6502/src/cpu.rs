@@ -2,13 +2,29 @@ use super::*;
 use std::{thread, thread::JoinHandle};
 
 impl super::Cpu {
+    pub fn get_p(self) -> u8 {
+        self._p.0
+    }
+
+    pub fn set_p(&mut self, value: u8) {
+        self._p.0 = value & 0b11011111;
+    }
+
+    flag_set_unset!(c);
+    flag_set_unset!(z);
+    flag_set_unset!(i);
+    flag_set_unset!(d);
+    flag_set_unset!(b);
+    flag_set_unset!(v);
+    flag_set_unset!(n);
+
     pub fn new(io: CpuIO) -> Cpu {
         Cpu {
             s: 0xFF,
             a: 0,
             x: 0,
             y: 0,
-            p: 0,
+            _p: StatusFlags { 0: 0 },
             pd: 0,
             ir: 0,
             dor: 0,
@@ -72,13 +88,23 @@ impl super::Cpu {
         self.phase_1();
         self.io.phase_1_negative_edge.wait();
         self.io.phase_2_positive_edge.wait();
-        self.irq_rst_control.phase_2(&mut self.p, &self.io);
+        self.irq_rst_control.phase_2(&mut self._p, &self.io);
         self.phase_2();
         self.io.phase_2_negative_edge.wait();
     }
 
     fn phase_1(&mut self) {}
     fn phase_2(&mut self) {}
+}
+
+impl super::StatusFlags {
+    bitfield_set_unset!(c);
+    bitfield_set_unset!(z);
+    bitfield_set_unset!(i);
+    bitfield_set_unset!(d);
+    bitfield_set_unset!(b);
+    bitfield_set_unset!(v);
+    bitfield_set_unset!(n);
 }
 
 impl super::CpuIO {
@@ -110,47 +136,48 @@ impl super::CpuIO {
 
 impl super::IrqRstControl {
     pub fn new() -> IrqRstControl {
-        IrqRstControl {
-            nmig: false,
-            nmil: false,
-            nmip: false,
-            irqp: false,
-            intg: false,
-            resp: false,
-            resg: false,
-            last_rst: false,
-            last_nmig: false,
-            last_nmil: false,
-            last_irq: false,
-            brk_done: false,
-        }
+        IrqRstControl { 0: 0 }
     }
+
+    bitfield_set_unset!(nmig);
+    bitfield_set_unset!(nmil);
+    bitfield_set_unset!(nmip);
+    bitfield_set_unset!(irqp);
+    bitfield_set_unset!(intg);
+    bitfield_set_unset!(resp);
+    bitfield_set_unset!(resg);
+    bitfield_set_unset!(last_rst);
+    bitfield_set_unset!(last_nmig);
+    bitfield_set_unset!(last_nmil);
+    bitfield_set_unset!(last_irq);
+    bitfield_set_unset!(brk_done);
+
     pub fn phase_1(&mut self) {
         self.rst_phase_1();
         self.nmi_phase_1();
         self.irq_phase_1();
     }
 
-    pub fn phase_2(&mut self, p: &mut u8, io: &CpuIO) {
+    pub fn phase_2(&mut self, p: &mut StatusFlags, io: &CpuIO) {
         self.rst_phase_2(&io);
         self.nmi_phase_2(&io);
         self.irq_phase_2(&io);
         self.intg_phase_2(p);
 
-        *p = *p | 16; // Set b flag
+        p.set_b(); // Set b flag
     }
 
-    fn intg_phase_2(&mut self, p: &u8) {
+    fn intg_phase_2(&mut self, p: &StatusFlags) {
         // Set INTG
         {
-            if (self.irqp && ((p & (1 << 2)) != 0)) || self.nmip {
-                self.intg = true;
+            if (self.get_irqp() && p.get_i()) || self.get_nmip() {
+                self.set_intg();
             }
         }
-        // Reset INTG
+        // Unset INTG
         {
-            if self.intg && self.brk_done {
-                self.intg = false;
+            if self.get_intg() && self.get_brk_done() {
+                self.unset_intg();
             }
         }
     }
@@ -158,60 +185,60 @@ impl super::IrqRstControl {
     fn irq_phase_1(&mut self) {
         // Set IRQP
         {
-            self.irqp = self.last_irq;
+            self.set_irqp_value(self.get_last_irq());
         }
     }
 
     fn irq_phase_2(&mut self, io: &CpuIO) {
         // Set IRQP
         {
-            self.last_irq = !read_pin!(io.irq);
+            self.set_last_irq_value(!read_pin!(io.irq));
         }
     }
 
     fn nmi_phase_1(&mut self) {
         // Set NMIG
         {
-            if self.nmip && !self.nmig {
-                self.nmig = true;
+            if self.get_nmip() && !self.get_nmig() {
+                self.set_nmig();
             }
         }
-        // Reset NMIG
+        // Unset NMIG
         {
-            if self.nmig && self.brk_done {
-                self.nmig = false;
+            if self.get_nmig() && self.get_brk_done() {
+                self.unset_nmig();
             }
         }
-        // Set/Reset NMIL
+        // Set/Unset NMIL
         {
-            if self.last_nmig || self.last_nmil {
-                self.nmil = self.nmip;
+            if self.get_last_nmig() || self.get_last_nmil() {
+                self.set_nmil_value(self.get_nmip());
             }
 
-            self.last_nmil = self.nmil;
+            self.set_last_nmil_value(self.get_nmil());
         }
     }
 
     fn nmi_phase_2(&mut self, io: &CpuIO) {
-        // Set/Reset NMIP
+        // Set/Unset NMIP
         {
-            self.nmip = !read_pin!(io.nmi);
+            self.set_nmip_value(!read_pin!(io.nmi));
         }
-        // Set/Reset NMIL
+        // Set/Unset NMIL
         {
-            self.last_nmig = self.nmig;
+            self.set_last_nmig_value(self.get_nmig());
         }
     }
 
     fn rst_phase_1(&mut self) {
         // Set RESP
         {
-            self.resp = !self.last_rst;
+            self.set_resp_value(!self.get_last_rst());
         }
-        // Reset RESG
+        // Unset RESG
         {
-            if self.resg && self.brk_done {
-                self.resg = false;
+            if self.get_resg() && self.get_brk_done() {
+                self.unset_resg();
             }
         }
     }
@@ -219,18 +246,18 @@ impl super::IrqRstControl {
     fn rst_phase_2(&mut self, io: &CpuIO) {
         // Set RESP
         {
-            self.last_rst = read_pin!(io.rst);
+            self.set_last_rst_value(read_pin!(io.rst));
         }
         // Set RESG
         {
-            if !self.resg && self.resp {
-                self.resg = true;
+            if !self.get_resg() && self.get_resp() {
+                self.set_resg();
             }
         }
     }
 
     fn irq_asserting(&mut self) -> bool {
-        self.intg || self.resg
+        self.get_intg() || self.get_resg()
     }
 }
 
