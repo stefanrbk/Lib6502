@@ -1,4 +1,44 @@
-fn decodeOpcode(op: u32) -> u8 {
+pub const NOTSTACKCHECK: u32 = 0b10010111000010000000000;
+
+pub const PD1XX000X0: u32 = 0b00011101100000000000000;
+pub const PD0XX0XX0X: u32 = 0b10010010000000000000000;
+pub const PDXXXX10X0: u32 = 0b00000101000010000000000;
+pub const PDXXX010X1: u32 = 0b00010100000010010000000;
+
+pub fn check_opcode(opcode: u8, tstate: u8, phase1: bool, check: u32) -> bool {
+    let op = !opcode as u32;
+    let op = op << 8;
+    let op = op | (opcode as u32);
+    let op = op << 4;
+    let op = op
+        | match tstate {
+            2 => 1,
+            3 => 2,
+            4 => 4,
+            5 => 8,
+            _ => 0,
+        };
+    let op = op << 2;
+    let op = op
+        | match phase1 {
+            true => 2,
+            false => 1,
+        };
+    let op = op << 1;
+    let notStack = !do_check_opcode(&op, NOTSTACKCHECK);
+    let op = op
+        | match notStack {
+            true => 1,
+            false => 0,
+        };
+    do_check_opcode(&op, check)
+}
+
+fn do_check_opcode(op: &u32, check: u32) -> bool {
+    (op | check) == check
+}
+
+fn decode_opcode(op: u32) -> u8 {
     match op {
         //STY
         0b01100011100001000000000 => 0,

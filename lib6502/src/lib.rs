@@ -127,31 +127,68 @@ enum TState {
     Kil,
 }
 
+//StatusFlags
 bitfield! {
     struct StatusFlags(u8);
-    get_c, set_c_value: 0;
-    get_z, set_z_value: 1;
-    get_i, set_i_value: 2;
-    get_d, set_d_value: 3;
-    get_b, set_b_value: 4;
-    get_v, set_v_value: 6;
-    get_n, set_n_value: 7;
+    get_c, set_c: 0;
+    get_z, set_z: 1;
+    get_i, set_i: 2;
+    get_d, set_d: 3;
+    get_b, set_b: 4;
+    get_v, set_v: 6;
+    get_n, set_n: 7;
 }
 
+// IrqRstControl
 bitfield! {
     struct IrqRstControl(u16);
-    get_nmig, set_nmig_value: 0;
-    get_nmil, set_nmil_value: 1;
-    get_nmip, set_nmip_value: 2;
-    get_irqp, set_irqp_value: 3;
-    get_intg, set_intg_value: 4;
-    get_resp, set_resp_value: 5;
-    get_resg, set_resg_value: 6;
-    get_last_rst, set_last_rst_value: 7;
-    get_last_nmig, set_last_nmig_value: 8;
-    get_last_nmil, set_last_nmil_value: 9;
-    get_last_irq, set_last_irq_value: 10;
-    get_brk_done, set_brk_done_value: 11;
+    get_nmig, set_nmig: 0;
+    get_nmil, set_nmil: 1;
+    get_nmip, set_nmip: 2;
+    get_irqp, set_irqp: 3;
+    get_intg, set_intg: 4;
+    get_resp, set_resp: 5;
+    get_resg, set_resg: 6;
+    get_last_rst, set_last_rst: 7;
+    get_last_nmig, set_last_nmig: 8;
+    get_last_nmil, set_last_nmil: 9;
+    get_last_irq, set_last_irq: 10;
+    get_brk_done, set_brk_done: 11;
+}
+
+// Predecoder
+bitfield! {
+    struct Predecoder(u16);
+    u8, get_pd, set_pd: 0, 7;
+    get_two_cycle, set_two_cycle: 8;
+    get_one_byte, set_one_byte: 9;
+}
+
+// TimingControl
+bitfield! {
+    struct TimingControl(u8);
+    get_fetch, set_fetch: 0;
+    get_do_fetch, set_do_fetch: 1;
+    get_do_fetch_last_phase_2, set_do_fetch_last_phase_2: 2;
+}
+
+// ReadyControl
+bitfield! {
+    struct ReadyControl(u8);
+    get_not_rdy_last_phase_2, set_not_rdy_last_phase_2: 0;
+    get_hold_branch, set_hold_branch: 1;
+    get_not_rdy, set_not_rdy: 2;
+}
+
+// LogicControl
+bitfield! {
+    struct LogicControl(u64);
+}
+
+// Decoder
+bitfield! {
+    struct Decoder(u128);
+    u8, get_ir, set_ir: 0, 7;
 }
 
 pub struct Clock {
@@ -197,8 +234,6 @@ pub struct Cpu {
     x: u8,
     y: u8,
     _p: StatusFlags,
-    pd: u8,
-    ir: u8,
     dor: u8,
     dl: u8,
     pcls: u8,
@@ -215,6 +250,10 @@ pub struct Cpu {
     adh: u8,
     sb: u8,
     irq_rst_control: IrqRstControl,
+    ready_control: ReadyControl,
+    predecoder: Predecoder,
+    decoder: Decoder,
+    timing_control: TimingControl,
     t_state: TState,
     io: CpuIO,
 }
