@@ -21,9 +21,6 @@ impl super::Cpu {
             dl: 0,
             pcls: 0,
             pcl: 0,
-            ai: 0,
-            bi: 0,
-            add: 0,
             abl: 0,
             abh: 0,
             pchs: 0,
@@ -37,6 +34,7 @@ impl super::Cpu {
             predecoder: Predecoder::new(),
             decoder: Decoder::new(),
             timing_control: TimingControl::new(),
+            alu: Alu::new(),
             t_state: TState::Kil,
             io: io,
         }
@@ -78,29 +76,50 @@ impl super::Cpu {
 
     fn cycle(&mut self) {
         self.io.phase_1_positive_edge.wait();
-        self.ready_control.phase_1(&self.io);
-        self.irq_rst_control.phase_1();
+
         self.phase_1();
+
         self.io.phase_1_negative_edge.wait();
+
         self.io.phase_2_positive_edge.wait();
-        self.ready_control.phase_2(&self.io);
-        self.irq_rst_control.phase_2(&mut self._p, &self.io);
+
         self.phase_2();
+
         self.io.phase_2_negative_edge.wait();
     }
 
     fn phase_1(&mut self) {
+        self.ready_control.phase_1(&self.io);
+        self.irq_rst_control.phase_1();
+        self.timing_control.phase_1(
+            &mut self.io,
+            &self.alu,
+            &self.decoder,
+            &self.irq_rst_control,
+            &self.ready_control,
+        );
         self.predecoder
             .phase_1(&mut self.decoder, &self.timing_control);
     }
     fn phase_2(&mut self) {
         // Update input data latch
         self.dl = read_bus!(self.io.db);
+
+        self.ready_control.phase_2(&self.io);
+        self.irq_rst_control.phase_2(&mut self._p, &self.io);
+        self.timing_control
+            .phase_2(&self.irq_rst_control, &self.ready_control);
         // Update predecoder
         self.predecoder.set_pd(self.dl);
 
         self.predecoder
             .phase_2(self.db, &self.timing_control, &self.irq_rst_control);
+    }
+}
+
+impl super::Alu {
+    pub fn new() -> Alu {
+        Alu { 0: 0 }
     }
 }
 
@@ -116,16 +135,17 @@ impl super::ReadyControl {
     }
     fn phase_1(&mut self, io: &CpuIO) {
         let rdy = read_pin!(io.rdy);
-
         self.set_not_rdy(!rdy);
 
         self.set_hold_branch(self.get_not_rdy_last_phase_2());
+        self.set_rdy_last_phase_1(rdy);
     }
     fn phase_2(&mut self, io: &CpuIO) {
         let rdy = read_pin!(io.rdy);
-
         self.set_not_rdy(!rdy);
+
         self.set_not_rdy_last_phase_2(!rdy);
+        self.set_not_rdy_delay(!self.get_rdy_last_phase_1());
     }
 }
 
@@ -133,16 +153,55 @@ impl super::TimingControl {
     pub fn new() -> TimingControl {
         TimingControl { 0: 0 }
     }
-    fn phase_1(&mut self, io: &CpuIO, rc: &ReadyControl) {
-        if rc.get_not_rdy() {
-            self.set_fetch(false);
-        } else {
-            self.set_fetch(self.get_do_fetch_last_phase_2());
+    fn phase_1(
+        &mut self,
+        io: &mut CpuIO,
+        alu: &Alu,
+        decoder: &Decoder,
+        rst: &IrqRstControl,
+        rc: &ReadyControl,
+    ) {
+        // c
+        {
+            let c = !(self.short_circuit_branch_add(alu, decoder, rc) || self.get_unk_20());
+            self.set_c(c);
+        }
+        // a
+        {
+            self.set_a(!(rc.get_not_rdy() || self.get_c()));
+        }
+
+        // Sync
+        {
+            if self.not_sync(alu, decoder, rc) {
+                clear_pin!(io.sync);
+            } else {
+                set_pin!(io.sync);
+            }
         }
     }
-    fn phase_2(&mut self, io: &CpuIO, rc: &ReadyControl) {
-        self.set_do_fetch_last_phase_2(self.get_do_fetch());
-        self.set_fetch(!rc.get_not_rdy() && self.get_do_fetch());
+    fn phase_2(&mut self, rst: &IrqRstControl, rc: &ReadyControl) {
+        // Fetch
+        {
+            self.set_fetch(!rc.get_not_rdy() && self.get_sync());
+        }
+        self.set_sync_last_phase_2(self.get_sync());
+    }
+    fn not_sync(&self, alu: &Alu, decoder: &Decoder, rc: &ReadyControl) -> bool {
+        !self.sync_left(alu, decoder, rc) && !self.get_b()
+    }
+    fn sync_left(&self, alu: &Alu, decoder: &Decoder, rc: &ReadyControl) -> bool {
+        !rc.get_not_rdy() && !self.not_rdy_lower(alu, decoder, rc)
+    }
+    fn not_rdy_lower(&self, alu: &Alu, decoder: &Decoder, rc: &ReadyControl) -> bool {
+        !self.short_circuit_branch_add(alu, decoder, rc) && !self.get_unk_20()
+    }
+    fn short_circuit_branch_add(&self, alu: &Alu, decoder: &Decoder, rc: &ReadyControl) -> bool {
+        self.not_t3_branch_or_not_rdy_delay(decoder, rc)
+            && (self.get_branch_back_phase_1() != alu.get_alu_c_out())
+    }
+    fn not_t3_branch_or_not_rdy_delay(&self, decoder: &Decoder, rc: &ReadyControl) -> bool {
+        !(decoder.get_t3_branch() || rc.get_not_rdy_delay())
     }
 }
 
@@ -162,10 +221,10 @@ impl super::Predecoder {
         if timing.get_fetch() && !irq.irq_asserting() {
             self.clear_ir();
         } else {
-            let pd_0xx0xx0x = pla::check_opcode(self.get_pd(), 0, false, pla::PD0XX0XX0X);
-            let pd_1xx000x0 = pla::check_opcode(self.get_pd(), 0, false, pla::PD1XX000X0);
-            let pd_xxx010x1 = pla::check_opcode(self.get_pd(), 0, false, pla::PDXXX010X1);
-            let pd_xxxx10x0 = pla::check_opcode(self.get_pd(), 0, false, pla::PDXXXX10X0);
+            let pd_0xx0xx0x = pla::check_opcode(self.get_pd(), 0, pla::PD0XX0XX0X);
+            let pd_1xx000x0 = pla::check_opcode(self.get_pd(), 0, pla::PD1XX000X0);
+            let pd_xxx010x1 = pla::check_opcode(self.get_pd(), 0, pla::PDXXX010X1);
+            let pd_xxxx10x0 = pla::check_opcode(self.get_pd(), 0, pla::PDXXXX10X0);
 
             self.set_two_cycle(pd_xxx010x1 || pd_1xx000x0 || (pd_xxxx10x0 && !pd_0xx0xx0x));
             self.set_one_byte(pd_xxxx10x0);
