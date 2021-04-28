@@ -1,3 +1,5 @@
+use super::Decoder as Decoder;
+
 pub const NOTSTACKCHECK: u32 = 0b10010111000010000000000;
 
 pub const PD1XX000X0: u32 = 0b00011101100000000000000;
@@ -5,7 +7,7 @@ pub const PD0XX0XX0X: u32 = 0b10010010000000000000000;
 pub const PDXXXX10X0: u32 = 0b00000101000010000000000;
 pub const PDXXX010X1: u32 = 0b00010100000010010000000;
 
-pub fn check_opcode(opcode: u8, tstate: u8, phase1: bool, check: u32) -> bool {
+pub fn check_opcode(opcode: u8, tstate: u8, check: u32) -> bool {
     let op = !opcode as u32;
     let op = op << 8;
     let op = op | (opcode as u32);
@@ -20,23 +22,154 @@ pub fn check_opcode(opcode: u8, tstate: u8, phase1: bool, check: u32) -> bool {
         };
     let op = op << 2;
     let op = op
-        | match phase1 {
-            true => 2,
-            false => 1,
+        | match tstate {
+            0 => 2,
+            1 => 1,
+            _ => 0,
         };
     let op = op << 1;
-    let notStack = !do_check_opcode(&op, NOTSTACKCHECK);
+    let not_stack = (op | NOTSTACKCHECK) != NOTSTACKCHECK;
     let op = op
-        | match notStack {
+        | match not_stack {
             true => 1,
             false => 0,
         };
-    do_check_opcode(&op, check)
+    return (op | check) == check;
 }
+pub type PlaFn = fn(&mut Decoder);
 
-fn do_check_opcode(op: &u32, check: u32) -> bool {
-    (op | check) == check
-}
+const PLA: [(u32,PlaFn); 130] = [
+    (0b01100011100001000000000, |d:&mut Decoder| d.set_sty_cpy_mem(true)),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+    (0,|d:&mut Decoder| {}),
+];
 
 fn decode_opcode(op: u32) -> u8 {
     match op {

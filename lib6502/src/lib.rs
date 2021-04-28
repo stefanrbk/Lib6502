@@ -1,9 +1,9 @@
 use bitfield::bitfield;
-use paste::paste;
 use std::sync::{Arc, RwLock};
 
 mod clock;
 mod cpu;
+mod decoder;
 mod memory;
 
 pub type Action = fn();
@@ -12,34 +12,6 @@ pub type DataPin = Bus<bool>;
 pub type Barrier = Arc<std::sync::Barrier>;
 
 const MAXMEM: usize = 1024 * 64;
-
-#[macro_export]
-macro_rules! bitfield_set_unset {
-    ($name:ident) => {
-        paste! {
-            pub fn [<set_ $name>](&mut self) {
-                self.[<set_ $name _value>](true);
-            }
-            pub fn [<unset_ $name>](&mut self) {
-                self.[<set_ $name _value>](false);
-            }
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! flag_set_unset {
-    ($name:ident) => {
-        paste! {
-            pub fn [<set_ $name>](&mut self) {
-                self._p.[<set_ $name>]();
-            }
-            pub fn [<unset_ $name>](&mut self) {
-                self._p.[<unset_ $name>]();
-            }
-        }
-    };
-}
 
 #[macro_export]
 macro_rules! cond {
@@ -164,12 +136,25 @@ bitfield! {
     get_one_byte, set_one_byte: 9;
 }
 
+// Decoder
+bitfield! {
+    struct Decoder(u128);
+    u8, get_ir, set_ir: 0, 7;
+    get_t3_branch, set_t3_branch: 8;
+}
+
 // TimingControl
 bitfield! {
     struct TimingControl(u8);
     get_fetch, set_fetch: 0;
-    get_do_fetch, set_do_fetch: 1;
-    get_do_fetch_last_phase_2, set_do_fetch_last_phase_2: 2;
+    get_sync, set_sync: 1;
+    get_sync_last_phase_2, set_sync_last_phase_2: 2;
+    get_a, set_a: 3;
+    get_b, set_b: 4;
+    get_c, set_c: 5;
+    get_unk_20, set_unk_20: 6;
+    get_branch_back_phase_1, set_branch_back_phase_1: 8;
+    get_unk_11, set_unk_11: 9;
 }
 
 // ReadyControl
@@ -178,6 +163,8 @@ bitfield! {
     get_not_rdy_last_phase_2, set_not_rdy_last_phase_2: 0;
     get_hold_branch, set_hold_branch: 1;
     get_not_rdy, set_not_rdy: 2;
+    get_rdy_last_phase_1, set_rdy_last_phase_1: 3;
+    get_not_rdy_delay, set_not_rdy_delay: 4;
 }
 
 // LogicControl
@@ -185,10 +172,13 @@ bitfield! {
     struct LogicControl(u64);
 }
 
-// Decoder
+// Alu
 bitfield! {
-    struct Decoder(u128);
-    u8, get_ir, set_ir: 0, 7;
+    struct Alu(u128);
+    u8, get_ai, set_ai: 0, 7;
+    u8, get_bi, set_bi: 8, 15;
+    u8, get_add, set_add: 16, 23;
+    get_alu_c_out, set_alu_c_out: 24;
 }
 
 pub struct Clock {
@@ -238,9 +228,6 @@ pub struct Cpu {
     dl: u8,
     pcls: u8,
     pcl: u8,
-    ai: u8,
-    bi: u8,
-    add: u8,
     abl: u8,
     abh: u8,
     pchs: u8,
@@ -254,6 +241,7 @@ pub struct Cpu {
     predecoder: Predecoder,
     decoder: Decoder,
     timing_control: TimingControl,
+    alu: Alu,
     t_state: TState,
     io: CpuIO,
 }
