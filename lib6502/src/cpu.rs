@@ -32,7 +32,7 @@ impl super::Cpu {
             irq_rst_control: IrqRstControl::new(),
             ready_control: ReadyControl::new(),
             predecoder: Predecoder::new(),
-            decoder: Decoder::new(),
+            decoder: Decoder { 0: 0 },
             timing_control: TimingControl::new(),
             alu: Alu::new(),
             t_state: TState::Kil,
@@ -98,8 +98,8 @@ impl super::Cpu {
             &self.irq_rst_control,
             &self.ready_control,
         );
-        self.predecoder
-            .phase_1(&mut self.decoder, &self.timing_control);
+        self.predecoder.phase_1(&self.timing_control);
+        self.decoder = Decoder::new(self.predecoder.get_ir(), &self.timing_control);
     }
     fn phase_2(&mut self) {
         // Update input data latch
@@ -120,12 +120,6 @@ impl super::Cpu {
 impl super::Alu {
     pub fn new() -> Alu {
         Alu { 0: 0 }
-    }
-}
-
-impl super::Decoder {
-    pub fn new() -> Decoder {
-        Decoder { 0: 0 }
     }
 }
 
@@ -152,6 +146,9 @@ impl super::ReadyControl {
 impl super::TimingControl {
     pub fn new() -> TimingControl {
         TimingControl { 0: 0 }
+    }
+    pub fn get_tstate(&self) -> u8 {
+        0
     }
     fn phase_1(
         &mut self,
@@ -210,9 +207,9 @@ impl super::Predecoder {
         Predecoder { 0: 0 }
     }
 
-    fn phase_1(&mut self, decode: &mut Decoder, timing: &TimingControl) {
+    fn phase_1(&mut self, timing: &TimingControl) {
         if timing.get_fetch() {
-            decode.set_ir(self.get_pd());
+            self.set_ir(self.get_pd());
         }
     }
 
@@ -233,6 +230,21 @@ impl super::Predecoder {
     pub fn clear_ir(&mut self) {
         self.set_two_cycle(false);
         self.set_one_byte(false);
+    }
+}
+
+impl super::Decoder {
+    pub fn new(ir: u8, tstate: &TimingControl) -> Decoder {
+        let mut value = 0 as u128;
+
+        for i in (0..=127).rev() {
+            if pla::check_opcode(ir, tstate.get_tstate(), pla::PLA[i]) {
+                value |= 1;
+            }
+            value <<= 1;
+        }
+
+        Decoder { 0: value }
     }
 }
 

@@ -3,7 +3,6 @@ use std::sync::{Arc, RwLock};
 
 mod clock;
 mod cpu;
-mod decoder;
 mod memory;
 
 pub type Action = fn();
@@ -130,16 +129,16 @@ bitfield! {
 
 // Predecoder
 bitfield! {
-    struct Predecoder(u16);
+    struct Predecoder(u32);
     u8, get_pd, set_pd: 0, 7;
-    get_two_cycle, set_two_cycle: 8;
-    get_one_byte, set_one_byte: 9;
+    u8, get_ir, set_ir: 8, 15;
+    get_two_cycle, set_two_cycle: 16;
+    get_one_byte, set_one_byte: 17;
 }
 
 // Decoder
 bitfield! {
     struct Decoder(u128);
-    u8, get_ir, set_ir: 0, 7;
     get_t3_branch, set_t3_branch: 8;
 }
 
