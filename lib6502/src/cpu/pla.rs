@@ -7,11 +7,6 @@ pub const PD0XX0XX0X: u32 = 0b10010010000000000000000;
 pub const PDXXXX10X0: u32 = 0b00000101000010000000000;
 pub const PDXXX010X1: u32 = 0b00010100000010010000000;
 
-bitfield! {
-    pub struct Pla(u128);
-    pub get_, set_: 0;
-}
-
 pub fn check_opcode(opcode: u8, tstate: u8, check: u32) -> bool {
     let op = !opcode as u32;
     let op = op << 8;
