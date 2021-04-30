@@ -99,35 +99,28 @@ bitfield! {
     get_n, set_n: 7;
 }
 
-// Predecoder
-// Decoder
-bitfield! {
-    struct Decoder(u128);
-    get_t3_branch, set_t3_branch: 8;
-}
-
 // TimingControl
 bitfield! {
-    struct TimingControl(u8);
-    get_fetch, set_fetch: 0;
-    get_sync, set_sync: 1;
-    get_sync_last_phase_2, set_sync_last_phase_2: 2;
-    get_a, set_a: 3;
-    get_b, set_b: 4;
-    get_c, set_c: 5;
-    get_unk_20, set_unk_20: 6;
-    get_branch_back_phase_1, set_branch_back_phase_1: 8;
-    get_unk_11, set_unk_11: 9;
+    pub struct TimingControl(u8);
+    pub get_fetch, set_fetch: 0;
+    pub get_sync, set_sync: 1;
+    pub get_sync_last_phase_2, set_sync_last_phase_2: 2;
+    pub get_a, set_a: 3;
+    pub get_b, set_b: 4;
+    pub get_c, set_c: 5;
+    pub get_unk_20, set_unk_20: 6;
+    pub get_branch_back_phase_1, set_branch_back_phase_1: 8;
+    pub get_unk_11, set_unk_11: 9;
 }
 
 // ReadyControl
 bitfield! {
     struct ReadyControl(u8);
-    get_not_rdy_last_phase_2, set_not_rdy_last_phase_2: 0;
-    get_hold_branch, set_hold_branch: 1;
-    get_not_rdy, set_not_rdy: 2;
-    get_rdy_last_phase_1, set_rdy_last_phase_1: 3;
-    get_not_rdy_delay, set_not_rdy_delay: 4;
+    pub get_not_rdy_last_phase_2, set_not_rdy_last_phase_2: 0;
+    pub get_hold_branch, set_hold_branch: 1;
+    pub get_not_rdy, set_not_rdy: 2;
+    pub get_rdy_last_phase_1, set_rdy_last_phase_1: 3;
+    pub get_not_rdy_delay, set_not_rdy_delay: 4;
 }
 
 // LogicControl

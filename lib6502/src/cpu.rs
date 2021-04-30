@@ -3,11 +3,13 @@ use super::*;
 use cpu_io::CpuIO;
 use irq_rst::IrqRstControl;
 use predecoder::Predecoder;
+use decoder::Decoder;
 use std::{thread, thread::JoinHandle};
 
 pub mod cpu_io;
 mod irq_rst;
 mod predecoder;
+mod decoder;
 
 pub struct Cpu {
     s: u8,
@@ -231,21 +233,6 @@ impl super::TimingControl {
     }
     fn not_t3_branch_or_not_rdy_delay(&self, decoder: &Decoder, rc: &ReadyControl) -> bool {
         !(decoder.get_t3_branch() || rc.get_not_rdy_delay())
-    }
-}
-
-impl super::Decoder {
-    pub fn new(ir: u8, tstate: &TimingControl) -> Decoder {
-        let mut value = 0 as u128;
-
-        for i in (0..=127).rev() {
-            if pla::check_opcode(ir, tstate.get_tstate(), pla::PLA[i]) {
-                value |= 1;
-            }
-            value <<= 1;
-        }
-
-        Decoder { 0: value }
     }
 }
 
