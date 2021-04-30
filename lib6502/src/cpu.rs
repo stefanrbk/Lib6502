@@ -1,15 +1,17 @@
 use super::*;
 
 use cpu_io::CpuIO;
+use decoder::Decoder;
 use irq_rst::IrqRstControl;
 use predecoder::Predecoder;
-use decoder::Decoder;
 use std::{thread, thread::JoinHandle};
+use timing_control::TimingControl;
 
 pub mod cpu_io;
+mod decoder;
 mod irq_rst;
 mod predecoder;
-mod decoder;
+mod timing_control;
 
 pub struct Cpu {
     s: u8,
@@ -174,65 +176,6 @@ impl super::ReadyControl {
 
         self.set_not_rdy_last_phase_2(!rdy);
         self.set_not_rdy_delay(!self.get_rdy_last_phase_1());
-    }
-}
-
-impl super::TimingControl {
-    pub fn new() -> TimingControl {
-        TimingControl { 0: 0 }
-    }
-    pub fn get_tstate(&self) -> u8 {
-        0
-    }
-    fn phase_1(
-        &mut self,
-        io: &mut CpuIO,
-        alu: &Alu,
-        decoder: &Decoder,
-        rst: &IrqRstControl,
-        rc: &ReadyControl,
-    ) {
-        // c
-        {
-            let c = !(self.short_circuit_branch_add(alu, decoder, rc) || self.get_unk_20());
-            self.set_c(c);
-        }
-        // a
-        {
-            self.set_a(!(rc.get_not_rdy() || self.get_c()));
-        }
-
-        // Sync
-        {
-            if self.not_sync(alu, decoder, rc) {
-                clear_pin!(io.sync);
-            } else {
-                set_pin!(io.sync);
-            }
-        }
-    }
-    fn phase_2(&mut self, rst: &IrqRstControl, rc: &ReadyControl) {
-        // Fetch
-        {
-            self.set_fetch(!rc.get_not_rdy() && self.get_sync());
-        }
-        self.set_sync_last_phase_2(self.get_sync());
-    }
-    fn not_sync(&self, alu: &Alu, decoder: &Decoder, rc: &ReadyControl) -> bool {
-        !self.sync_left(alu, decoder, rc) && !self.get_b()
-    }
-    fn sync_left(&self, alu: &Alu, decoder: &Decoder, rc: &ReadyControl) -> bool {
-        !rc.get_not_rdy() && !self.not_rdy_lower(alu, decoder, rc)
-    }
-    fn not_rdy_lower(&self, alu: &Alu, decoder: &Decoder, rc: &ReadyControl) -> bool {
-        !self.short_circuit_branch_add(alu, decoder, rc) && !self.get_unk_20()
-    }
-    fn short_circuit_branch_add(&self, alu: &Alu, decoder: &Decoder, rc: &ReadyControl) -> bool {
-        self.not_t3_branch_or_not_rdy_delay(decoder, rc)
-            && (self.get_branch_back_phase_1() != alu.get_alu_c_out())
-    }
-    fn not_t3_branch_or_not_rdy_delay(&self, decoder: &Decoder, rc: &ReadyControl) -> bool {
-        !(decoder.get_t3_branch() || rc.get_not_rdy_delay())
     }
 }
 

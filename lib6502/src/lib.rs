@@ -99,20 +99,6 @@ bitfield! {
     get_n, set_n: 7;
 }
 
-// TimingControl
-bitfield! {
-    pub struct TimingControl(u8);
-    pub get_fetch, set_fetch: 0;
-    pub get_sync, set_sync: 1;
-    pub get_sync_last_phase_2, set_sync_last_phase_2: 2;
-    pub get_a, set_a: 3;
-    pub get_b, set_b: 4;
-    pub get_c, set_c: 5;
-    pub get_unk_20, set_unk_20: 6;
-    pub get_branch_back_phase_1, set_branch_back_phase_1: 8;
-    pub get_unk_11, set_unk_11: 9;
-}
-
 // ReadyControl
 bitfield! {
     struct ReadyControl(u8);
