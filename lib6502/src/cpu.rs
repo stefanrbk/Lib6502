@@ -35,21 +35,16 @@ impl super::Cpu {
             decoder: Decoder { 0: 0 },
             timing_control: TimingControl::new(),
             alu: Alu::new(),
-            t_state: TState::Kil,
             io: io,
         }
     }
 
     pub fn start(mut self) -> JoinHandle<()> {
         thread::spawn(move || {
-            self.t_state = TState::T0;
             set_pin!(self.io.rw);
 
             loop {
-                match self.t_state {
-                    TState::Kil => break,
-                    _ => self.cycle(),
-                }
+                self.cycle();
             }
         })
     }
@@ -272,120 +267,6 @@ impl super::CpuIO {
             addr_stable: null_barrier!(),
             data_stable: null_barrier!(),
         }
-    }
-}
-
-impl super::IrqRstControl {
-    pub fn new() -> IrqRstControl {
-        IrqRstControl { 0: 0 }
-    }
-
-    pub fn phase_1(&mut self) {
-        self.rst_phase_1();
-        self.nmi_phase_1();
-        self.irq_phase_1();
-    }
-
-    pub fn phase_2(&mut self, p: &mut StatusFlags, io: &CpuIO) {
-        self.rst_phase_2(&io);
-        self.nmi_phase_2(&io);
-        self.irq_phase_2(&io);
-        self.intg_phase_2(p);
-
-        p.set_b(true); // Set b flag
-    }
-
-    fn intg_phase_2(&mut self, p: &StatusFlags) {
-        // Set INTG
-        {
-            if (self.get_irqp() && p.get_i()) || self.get_nmip() {
-                self.set_intg(true);
-            }
-        }
-        // Unset INTG
-        {
-            if self.get_intg() && self.get_brk_done() {
-                self.set_intg(false);
-            }
-        }
-    }
-
-    fn irq_phase_1(&mut self) {
-        // Set IRQP
-        {
-            self.set_irqp(self.get_last_irq());
-        }
-    }
-
-    fn irq_phase_2(&mut self, io: &CpuIO) {
-        // Set IRQP
-        {
-            self.set_last_irq(!read_pin!(io.irq));
-        }
-    }
-
-    fn nmi_phase_1(&mut self) {
-        // Set NMIG
-        {
-            if self.get_nmip() && !self.get_nmig() {
-                self.set_nmig(true);
-            }
-        }
-        // Unset NMIG
-        {
-            if self.get_nmig() && self.get_brk_done() {
-                self.set_nmig(false);
-            }
-        }
-        // Set/Unset NMIL
-        {
-            if self.get_last_nmig() || self.get_last_nmil() {
-                self.set_nmil(self.get_nmip());
-            }
-
-            self.set_last_nmil(self.get_nmil());
-        }
-    }
-
-    fn nmi_phase_2(&mut self, io: &CpuIO) {
-        // Set/Unset NMIP
-        {
-            self.set_nmip(!read_pin!(io.nmi));
-        }
-        // Set/Unset NMIL
-        {
-            self.set_last_nmig(self.get_nmig());
-        }
-    }
-
-    fn rst_phase_1(&mut self) {
-        // Set RESP
-        {
-            self.set_resp(!self.get_last_rst());
-        }
-        // Unset RESG
-        {
-            if self.get_resg() && self.get_brk_done() {
-                self.set_resg(false);
-            }
-        }
-    }
-
-    fn rst_phase_2(&mut self, io: &CpuIO) {
-        // Set RESP
-        {
-            self.set_last_rst(read_pin!(io.rst));
-        }
-        // Set RESG
-        {
-            if !self.get_resg() && self.get_resp() {
-                self.set_resg(true);
-            }
-        }
-    }
-
-    fn irq_asserting(&self) -> bool {
-        self.get_intg() || self.get_resg()
     }
 }
 

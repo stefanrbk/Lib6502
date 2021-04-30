@@ -1,8 +1,13 @@
 use bitfield::bitfield;
 use std::sync::{Arc, RwLock};
 
+use cpu_io::CpuIO;
+use irq_rst::IrqRstControl;
+
 mod clock;
 mod cpu;
+mod cpu_io;
+mod irq_rst;
 mod memory;
 
 pub type Action = fn();
@@ -87,17 +92,6 @@ macro_rules! clear_pin {
     };
 }
 
-enum TState {
-    T0,
-    T1,
-    T2,
-    T3,
-    T4,
-    T5,
-    T6,
-    Kil,
-}
-
 //StatusFlags
 bitfield! {
     struct StatusFlags(u8);
@@ -108,23 +102,6 @@ bitfield! {
     get_b, set_b: 4;
     get_v, set_v: 6;
     get_n, set_n: 7;
-}
-
-// IrqRstControl
-bitfield! {
-    struct IrqRstControl(u16);
-    get_nmig, set_nmig: 0;
-    get_nmil, set_nmil: 1;
-    get_nmip, set_nmip: 2;
-    get_irqp, set_irqp: 3;
-    get_intg, set_intg: 4;
-    get_resp, set_resp: 5;
-    get_resg, set_resg: 6;
-    get_last_rst, set_last_rst: 7;
-    get_last_nmig, set_last_nmig: 8;
-    get_last_nmil, set_last_nmil: 9;
-    get_last_irq, set_last_irq: 10;
-    get_brk_done, set_brk_done: 11;
 }
 
 // Predecoder
@@ -194,29 +171,6 @@ pub struct Memory {
     data: [u8; MAXMEM],
 }
 
-pub struct CpuIO {
-    pub db: Bus<u8>,
-    pub abh: Bus<u8>,
-    pub abl: Bus<u8>,
-    pub rw: DataPin,
-    pub irq: DataPin,
-    pub rdy: DataPin,
-    pub nmi: DataPin,
-    pub rst: DataPin,
-    pub sync: DataPin,
-    pub so: DataPin,
-    pub phase_1_positive_edge: Barrier,
-    pub phase_2_positive_edge: Barrier,
-    pub phase_1_negative_edge: Barrier,
-    pub phase_2_negative_edge: Barrier,
-    pub read_write_positive_edge: Barrier,
-    pub read_write_negative_edge: Barrier,
-    pub sync_positive_edge: Barrier,
-    pub sync_negative_edge: Barrier,
-    pub addr_stable: Barrier,
-    pub data_stable: Barrier,
-}
-
 pub struct Cpu {
     s: u8,
     a: u8,
@@ -241,6 +195,5 @@ pub struct Cpu {
     decoder: Decoder,
     timing_control: TimingControl,
     alu: Alu,
-    t_state: TState,
     io: CpuIO,
 }
