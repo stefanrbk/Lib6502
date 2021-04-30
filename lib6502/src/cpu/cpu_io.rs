@@ -22,3 +22,30 @@ pub struct CpuIO {
     pub addr_stable: Barrier,
     pub data_stable: Barrier,
 }
+
+impl CpuIO {
+    pub fn new() -> CpuIO {
+        CpuIO {
+            db: new_bus!(0 as u8),
+            abh: new_bus!(0 as u8),
+            abl: new_bus!(0 as u8),
+            rw: new_pin_set!(),
+            irq: new_pin_set!(),
+            rdy: new_pin_unset!(),
+            nmi: new_pin_set!(),
+            rst: new_pin_unset!(),
+            sync: new_pin_unset!(),
+            so: new_pin_unset!(),
+            phase_1_negative_edge: null_barrier!(),
+            phase_1_positive_edge: null_barrier!(),
+            phase_2_negative_edge: null_barrier!(),
+            phase_2_positive_edge: null_barrier!(),
+            read_write_negative_edge: null_barrier!(),
+            read_write_positive_edge: null_barrier!(),
+            sync_negative_edge: null_barrier!(),
+            sync_positive_edge: null_barrier!(),
+            addr_stable: null_barrier!(),
+            data_stable: null_barrier!(),
+        }
+    }
+}
