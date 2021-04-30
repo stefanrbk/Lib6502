@@ -41,7 +41,7 @@ impl Cpu {
         self._p.0 = value & 0b11011111;
     }
 
-    #[no_mangle]
+    #[export_name = "new_cpu"]
     pub fn new(io: CpuIO) -> Cpu {
         Cpu {
             s: 0xFF,
@@ -71,7 +71,7 @@ impl Cpu {
         }
     }
 
-    #[no_mangle]
+    #[export_name = "start_cpu"]
     pub fn start(mut self) -> JoinHandle<()> {
         thread::spawn(move || {
             set_pin!(self.io.rw);
