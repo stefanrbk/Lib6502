@@ -1,5 +1,3 @@
-use bitfield::bitfield;
-
 pub const NOTSTACKCHECK: u32 = 0b10010111000010000000000;
 
 pub const PD1XX000X0: u32 = 0b00011101100000000000000;
