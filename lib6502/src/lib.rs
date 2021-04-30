@@ -87,18 +87,6 @@ macro_rules! clear_pin {
     };
 }
 
-//StatusFlags
-bitfield! {
-    struct StatusFlags(u8);
-    get_c, set_c: 0;
-    get_z, set_z: 1;
-    get_i, set_i: 2;
-    get_d, set_d: 3;
-    get_b, set_b: 4;
-    get_v, set_v: 6;
-    get_n, set_n: 7;
-}
-
 // ReadyControl
 bitfield! {
     struct ReadyControl(u8);
