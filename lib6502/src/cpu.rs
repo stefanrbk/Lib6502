@@ -6,6 +6,7 @@ use data_path_control::DataPathControl;
 use decoder::Decoder;
 use irq_rst::IrqRstControl;
 use predecoder::Predecoder;
+use ready_control::ReadyControl;
 use std::{thread, thread::JoinHandle};
 use timing_control::TimingControl;
 
@@ -16,6 +17,7 @@ mod decoder;
 mod irq_rst;
 mod pla;
 mod predecoder;
+mod ready_control;
 mod timing_control;
 
 //StatusFlags
@@ -167,26 +169,6 @@ impl Cpu {
 
         self.predecoder
             .phase_2(self.db, &self.timing_control, &self.irq_rst_control);
-    }
-}
-
-impl super::ReadyControl {
-    pub fn new() -> ReadyControl {
-        ReadyControl { 0: 0 }
-    }
-    fn phase_1(&mut self, io: &CpuIO) {
-        let rdy = read_pin!(io.rdy);
-        self.set_not_rdy(!rdy);
-
-        self.set_hold_branch(self.get_not_rdy_last_phase_2());
-        self.set_rdy_last_phase_1(rdy);
-    }
-    fn phase_2(&mut self, io: &CpuIO) {
-        let rdy = read_pin!(io.rdy);
-        self.set_not_rdy(!rdy);
-
-        self.set_not_rdy_last_phase_2(!rdy);
-        self.set_not_rdy_delay(!self.get_rdy_last_phase_1());
     }
 }
 

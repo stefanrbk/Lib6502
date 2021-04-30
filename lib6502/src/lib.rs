@@ -87,16 +87,6 @@ macro_rules! clear_pin {
     };
 }
 
-// ReadyControl
-bitfield! {
-    struct ReadyControl(u8);
-    pub get_not_rdy_last_phase_2, set_not_rdy_last_phase_2: 0;
-    pub get_hold_branch, set_hold_branch: 1;
-    pub get_not_rdy, set_not_rdy: 2;
-    pub get_rdy_last_phase_1, set_rdy_last_phase_1: 3;
-    pub get_not_rdy_delay, set_not_rdy_delay: 4;
-}
-
 // LogicControl
 bitfield! {
     struct LogicControl(u64);
