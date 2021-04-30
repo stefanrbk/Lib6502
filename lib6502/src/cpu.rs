@@ -5,6 +5,7 @@ use cpu_io::CpuIO;
 use data_path_control::DataPathControl;
 use decoder::Decoder;
 use irq_rst::IrqRstControl;
+use pla::Pla;
 use predecoder::Predecoder;
 use ready_control::ReadyControl;
 use std::{thread, thread::JoinHandle};

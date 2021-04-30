@@ -87,11 +87,6 @@ macro_rules! clear_pin {
     };
 }
 
-// LogicControl
-bitfield! {
-    struct LogicControl(u64);
-}
-
 pub struct Clock {
     pub phase_1_positive_edge: Barrier,
     pub phase_1_negative_edge: Barrier,
