@@ -1,14 +1,8 @@
 use bitfield::bitfield;
 use std::sync::{Arc, RwLock};
 
-use cpu_io::CpuIO;
-use irq_rst::IrqRstControl;
-
-
 pub mod clock;
 pub mod cpu;
-pub mod cpu_io;
-mod irq_rst;
 mod memory;
 
 pub type Action = fn();

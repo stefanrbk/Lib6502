@@ -1,8 +1,12 @@
 use super::*;
 
+use cpu_io::CpuIO;
+use irq_rst::IrqRstControl;
 use predecoder::Predecoder;
 use std::{thread, thread::JoinHandle};
 
+pub mod cpu_io;
+mod irq_rst;
 mod predecoder;
 
 pub struct Cpu {
@@ -245,7 +249,7 @@ impl super::Decoder {
     }
 }
 
-impl super::CpuIO {
+impl CpuIO {
     pub fn new() -> CpuIO {
         CpuIO {
             db: new_bus!(0 as u8),

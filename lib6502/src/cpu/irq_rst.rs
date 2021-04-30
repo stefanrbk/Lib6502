@@ -1,5 +1,4 @@
 use super::*;
-use crate::CpuIO;
 use bitfield::bitfield;
 
 bitfield! {
