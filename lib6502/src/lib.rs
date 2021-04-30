@@ -102,15 +102,6 @@ bitfield! {
     struct LogicControl(u64);
 }
 
-// Alu
-bitfield! {
-    struct Alu(u128);
-    u8, get_ai, set_ai: 0, 7;
-    u8, get_bi, set_bi: 8, 15;
-    u8, get_add, set_add: 16, 23;
-    get_alu_c_out, set_alu_c_out: 24;
-}
-
 pub struct Clock {
     pub phase_1_positive_edge: Barrier,
     pub phase_1_negative_edge: Barrier,

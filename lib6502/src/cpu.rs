@@ -1,15 +1,20 @@
 use super::*;
 
+use alu::Alu;
 use cpu_io::CpuIO;
+use data_path_control::DataPathControl;
 use decoder::Decoder;
 use irq_rst::IrqRstControl;
 use predecoder::Predecoder;
 use std::{thread, thread::JoinHandle};
 use timing_control::TimingControl;
 
+mod alu;
 pub mod cpu_io;
+mod data_path_control;
 mod decoder;
 mod irq_rst;
+mod pla;
 mod predecoder;
 mod timing_control;
 
@@ -165,12 +170,6 @@ impl Cpu {
     }
 }
 
-impl super::Alu {
-    pub fn new() -> Alu {
-        Alu { 0: 0 }
-    }
-}
-
 impl super::ReadyControl {
     pub fn new() -> ReadyControl {
         ReadyControl { 0: 0 }
@@ -217,5 +216,3 @@ impl CpuIO {
         }
     }
 }
-
-mod pla;
