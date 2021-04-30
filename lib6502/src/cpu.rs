@@ -1,7 +1,38 @@
 use super::*;
+
+use predecoder::Predecoder;
 use std::{thread, thread::JoinHandle};
 
-impl super::Cpu {
+mod predecoder;
+
+pub struct Cpu {
+    s: u8,
+    a: u8,
+    x: u8,
+    y: u8,
+    _p: StatusFlags,
+    dor: u8,
+    dl: u8,
+    pcls: u8,
+    pcl: u8,
+    abl: u8,
+    abh: u8,
+    pchs: u8,
+    pch: u8,
+    db: u8,
+    adl: u8,
+    adh: u8,
+    sb: u8,
+    irq_rst_control: IrqRstControl,
+    ready_control: ReadyControl,
+    predecoder: Predecoder,
+    decoder: Decoder,
+    timing_control: TimingControl,
+    alu: Alu,
+    io: CpuIO,
+}
+
+impl Cpu {
     pub fn get_p(self) -> u8 {
         self._p.0
     }
@@ -10,6 +41,7 @@ impl super::Cpu {
         self._p.0 = value & 0b11011111;
     }
 
+    #[no_mangle]
     pub fn new(io: CpuIO) -> Cpu {
         Cpu {
             s: 0xFF,
@@ -39,6 +71,7 @@ impl super::Cpu {
         }
     }
 
+    #[no_mangle]
     pub fn start(mut self) -> JoinHandle<()> {
         thread::spawn(move || {
             set_pin!(self.io.rw);
@@ -194,37 +227,6 @@ impl super::TimingControl {
     }
     fn not_t3_branch_or_not_rdy_delay(&self, decoder: &Decoder, rc: &ReadyControl) -> bool {
         !(decoder.get_t3_branch() || rc.get_not_rdy_delay())
-    }
-}
-
-impl super::Predecoder {
-    pub fn new() -> Predecoder {
-        Predecoder { 0: 0 }
-    }
-
-    fn phase_1(&mut self, timing: &TimingControl) {
-        if timing.get_fetch() {
-            self.set_ir(self.get_pd());
-        }
-    }
-
-    fn phase_2(&mut self, db: u8, timing: &TimingControl, irq: &IrqRstControl) {
-        self.set_pd(db);
-        if timing.get_fetch() && !irq.irq_asserting() {
-            self.clear_ir();
-        } else {
-            let pd_0xx0xx0x = pla::check_opcode(self.get_pd(), 0, pla::PD0XX0XX0X);
-            let pd_1xx000x0 = pla::check_opcode(self.get_pd(), 0, pla::PD1XX000X0);
-            let pd_xxx010x1 = pla::check_opcode(self.get_pd(), 0, pla::PDXXX010X1);
-            let pd_xxxx10x0 = pla::check_opcode(self.get_pd(), 0, pla::PDXXXX10X0);
-
-            self.set_two_cycle(pd_xxx010x1 || pd_1xx000x0 || (pd_xxxx10x0 && !pd_0xx0xx0x));
-            self.set_one_byte(pd_xxxx10x0);
-        }
-    }
-    pub fn clear_ir(&mut self) {
-        self.set_two_cycle(false);
-        self.set_one_byte(false);
     }
 }
 

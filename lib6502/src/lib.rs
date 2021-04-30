@@ -4,9 +4,10 @@ use std::sync::{Arc, RwLock};
 use cpu_io::CpuIO;
 use irq_rst::IrqRstControl;
 
-mod clock;
-mod cpu;
-mod cpu_io;
+
+pub mod clock;
+pub mod cpu;
+pub mod cpu_io;
 mod irq_rst;
 mod memory;
 
@@ -105,14 +106,6 @@ bitfield! {
 }
 
 // Predecoder
-bitfield! {
-    struct Predecoder(u32);
-    u8, get_pd, set_pd: 0, 7;
-    u8, get_ir, set_ir: 8, 15;
-    get_two_cycle, set_two_cycle: 16;
-    get_one_byte, set_one_byte: 17;
-}
-
 // Decoder
 bitfield! {
     struct Decoder(u128);
@@ -169,31 +162,4 @@ pub struct Clock {
 
 pub struct Memory {
     data: [u8; MAXMEM],
-}
-
-pub struct Cpu {
-    s: u8,
-    a: u8,
-    x: u8,
-    y: u8,
-    _p: StatusFlags,
-    dor: u8,
-    dl: u8,
-    pcls: u8,
-    pcl: u8,
-    abl: u8,
-    abh: u8,
-    pchs: u8,
-    pch: u8,
-    db: u8,
-    adl: u8,
-    adh: u8,
-    sb: u8,
-    irq_rst_control: IrqRstControl,
-    ready_control: ReadyControl,
-    predecoder: Predecoder,
-    decoder: Decoder,
-    timing_control: TimingControl,
-    alu: Alu,
-    io: CpuIO,
 }
