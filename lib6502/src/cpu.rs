@@ -22,18 +22,6 @@ mod ready_control;
 mod registers;
 mod timing_control;
 
-//StatusFlags
-bitfield! {
-    pub struct StatusFlags(u8);
-    get_c, set_c: 0;
-    get_z, set_z: 1;
-    get_i, set_i: 2;
-    get_d, set_d: 3;
-    get_b, set_b: 4;
-    get_v, set_v: 6;
-    get_n, set_n: 7;
-}
-
 pub struct Cpu {
     registers: Registers,
     irq_rst_control: IrqRstControl,
@@ -115,8 +103,9 @@ impl Cpu {
             &self.irq_rst_control,
             &self.ready_control,
         );
-        self.predecoder.phase_1(&self.timing_control);
-        self.decoder = Decoder::new(self.predecoder.get_ir(), &self.timing_control);
+        self.predecoder
+            .phase_1(&mut self.registers.ir, &self.timing_control);
+        self.decoder = Decoder::new(self.registers.ir, &self.timing_control);
     }
     fn phase_2(&mut self) {
         // Update input data latch
@@ -132,6 +121,7 @@ impl Cpu {
 
         self.predecoder.phase_2(
             self.registers.dl,
+            &mut self.registers.ir,
             &self.timing_control,
             &self.irq_rst_control,
         );
