@@ -29,6 +29,7 @@ pub struct Cpu {
     predecoder: Predecoder,
     decoder: Decoder,
     timing_control: TimingControl,
+    dp_control: DataPathControl,
     alu: Alu,
     io: CpuIO,
 }
@@ -43,6 +44,7 @@ impl Cpu {
             predecoder: Predecoder::new(),
             decoder: Decoder { 0: 0 },
             timing_control: TimingControl::new(),
+            dp_control: DataPathControl::new(),
             alu: Alu::new(),
             io: io,
         }

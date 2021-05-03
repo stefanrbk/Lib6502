@@ -54,6 +54,19 @@ impl DataPathControl {
         }
     }
 
+    pub fn reset(&mut self) {
+        self.adh_bus_read = Vec::new();
+        self.adh_bus_modify = Vec::new();
+        self.adh_bus_write = Vec::new();
+        self.adl_bus_read = Vec::new();
+        self.adl_bus_modify = Vec::new();
+        self.adl_bus_write = Vec::new();
+        self.db_bus_read = Vec::new();
+        self.db_bus_write = Vec::new();
+        self.sb_bus_read = Vec::new();
+        self.sb_bus_write = Vec::new();
+    }
+
     fn dl_to_db(&mut self, reg: &mut Registers) {
         self.db = reg.dl;
     }

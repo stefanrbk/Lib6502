@@ -68,6 +68,6 @@ impl super::TimingControl {
             && (self.get_branch_back_phase_1() != alu.get_alu_c_out())
     }
     fn not_t3_branch_or_not_rdy_delay(&self, decoder: &Decoder, rc: &ReadyControl) -> bool {
-        !(decoder.get_t3_branch() || rc.get_not_rdy_delay())
+        !(decoder.t3_branch() || rc.get_not_rdy_delay())
     }
 }
