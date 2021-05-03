@@ -4,7 +4,7 @@ use bitfield::bitfield;
 
 bitfield! {
     pub struct Decoder(u128);
-    pub get_t3_branch, set_t3_branch: 8;
+    pub t3_branch, _: 0;
 }
 
 impl Decoder {
