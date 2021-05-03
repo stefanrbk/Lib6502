@@ -1,3 +1,4 @@
+use super::registers::StatusFlags;
 use super::*;
 use bitfield::bitfield;
 
