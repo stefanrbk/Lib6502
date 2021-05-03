@@ -1,9 +1,8 @@
 use super::*;
 
 pub struct CpuIO {
-    pub db: Bus<u8>,
-    pub abh: Bus<u8>,
-    pub abl: Bus<u8>,
+    pub data_bus: Bus<u8>,
+    pub address_bus: Bus<u16>,
     pub rw: DataPin,
     pub irq: DataPin,
     pub rdy: DataPin,
@@ -26,9 +25,8 @@ pub struct CpuIO {
 impl CpuIO {
     pub fn new() -> CpuIO {
         CpuIO {
-            db: new_bus!(0 as u8),
-            abh: new_bus!(0 as u8),
-            abl: new_bus!(0 as u8),
+            data_bus: new_bus!(0 as u8),
+            address_bus: new_bus!(0 as u16),
             rw: new_pin_set!(),
             irq: new_pin_set!(),
             rdy: new_pin_unset!(),

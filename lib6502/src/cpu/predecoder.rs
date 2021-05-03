@@ -20,8 +20,8 @@ impl Predecoder {
         }
     }
 
-    pub fn phase_2(&mut self, db: u8, timing: &TimingControl, irq: &IrqRstControl) {
-        self.set_pd(db);
+    pub fn phase_2(&mut self, dl: u8, timing: &TimingControl, irq: &IrqRstControl) {
+        self.set_pd(dl);
         if timing.get_fetch() && !irq.irq_asserting() {
             self.clear_ir();
         } else {

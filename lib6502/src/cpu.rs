@@ -7,6 +7,7 @@ use decoder::Decoder;
 use irq_rst::IrqRstControl;
 use predecoder::Predecoder;
 use ready_control::ReadyControl;
+use registers::Registers;
 use std::{thread, thread::JoinHandle};
 use timing_control::TimingControl;
 
@@ -18,11 +19,12 @@ mod irq_rst;
 mod pla;
 mod predecoder;
 mod ready_control;
+mod registers;
 mod timing_control;
 
 //StatusFlags
 bitfield! {
-    struct StatusFlags(u8);
+    pub struct StatusFlags(u8);
     get_c, set_c: 0;
     get_z, set_z: 1;
     get_i, set_i: 2;
@@ -33,23 +35,7 @@ bitfield! {
 }
 
 pub struct Cpu {
-    s: u8,
-    a: u8,
-    x: u8,
-    y: u8,
-    _p: StatusFlags,
-    dor: u8,
-    dl: u8,
-    pcls: u8,
-    pcl: u8,
-    abl: u8,
-    abh: u8,
-    pchs: u8,
-    pch: u8,
-    db: u8,
-    adl: u8,
-    adh: u8,
-    sb: u8,
+    registers: Registers,
     irq_rst_control: IrqRstControl,
     ready_control: ReadyControl,
     predecoder: Predecoder,
@@ -60,34 +46,10 @@ pub struct Cpu {
 }
 
 impl Cpu {
-    pub fn get_p(self) -> u8 {
-        self._p.0
-    }
-
-    pub fn set_p(&mut self, value: u8) {
-        self._p.0 = value & 0b11011111;
-    }
-
     #[export_name = "new_cpu"]
     pub fn new(io: CpuIO) -> Cpu {
         Cpu {
-            s: 0xFF,
-            a: 0,
-            x: 0,
-            y: 0,
-            _p: StatusFlags { 0: 0 },
-            dor: 0,
-            dl: 0,
-            pcls: 0,
-            pcl: 0,
-            abl: 0,
-            abh: 0,
-            pchs: 0,
-            pch: 0,
-            db: 0,
-            adl: 0,
-            adh: 0,
-            sb: 0,
+            registers: Registers::new(),
             irq_rst_control: IrqRstControl::new(),
             ready_control: ReadyControl::new(),
             predecoder: Predecoder::new(),
@@ -158,16 +120,20 @@ impl Cpu {
     }
     fn phase_2(&mut self) {
         // Update input data latch
-        self.dl = read_bus!(self.io.db);
+        self.registers.dl = read_bus!(self.io.data_bus);
 
         self.ready_control.phase_2(&self.io);
-        self.irq_rst_control.phase_2(&mut self._p, &self.io);
+        self.irq_rst_control
+            .phase_2(&mut self.registers.p, &self.io);
         self.timing_control
             .phase_2(&self.irq_rst_control, &self.ready_control);
         // Update predecoder
-        self.predecoder.set_pd(self.dl);
+        self.predecoder.set_pd(self.registers.dl);
 
-        self.predecoder
-            .phase_2(self.db, &self.timing_control, &self.irq_rst_control);
+        self.predecoder.phase_2(
+            self.registers.dl,
+            &self.timing_control,
+            &self.irq_rst_control,
+        );
     }
 }
